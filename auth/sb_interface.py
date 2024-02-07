@@ -1,13 +1,13 @@
 from requests import HTTPError
 import requests
 import json
-from flask import config
+from flask import current_app
 from auth.User import User
 
 class SpringBoot():
     @staticmethod
     def get_url(table, endpoint):
-        return config["SPRING_BOOT_URL"] + "/api/" + table + "/" + endpoint
+        return str(current_app.config["SPRING_BOOT_URL"]) + "/api/" + table + "/" + endpoint
     
     @staticmethod
     def get_attrib(attribs, id_type, value): ## TODO
@@ -21,15 +21,19 @@ class SpringBoot():
         print(resp)        
         return resp
     
+    # @staticmethod
+    # def get_email(id_type, value):
+    #     get_attrib_resp = SpringBoot.get_attrib(["email"], id_type, value)
+    #     if get_attrib_resp:
+    #         email = json.loads(get_attrib_resp)["email"]
+    #         return email
+    #     else:
+    #         raise HTTPError("USER_NOT_FOUND")
+    
     @staticmethod
     def get_email(id_type, value):
-        get_attrib_resp = SpringBoot.get_attrib(["email"], id_type, value)
-        if get_attrib_resp:
-            email = json.loads(get_attrib_resp)["email"]
-            return email
-        else:
-            raise HTTPError("USER_NOT_FOUND")
-    
+        return value
+        
     @staticmethod
     def add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob):
         url = SpringBoot.get_url("Customer", "add")

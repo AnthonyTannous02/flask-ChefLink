@@ -1,24 +1,19 @@
-import json
-import traceback
-import pyrebase
-import requests
+import traceback, pyrebase, requests, os
 
 class Firebase():
     def __init__(self):
         config={
-            "apiKey": "AIzaSyC8EJP1OlmChtZwGslv-Yt0A2APZn1pGrw",
-            "authDomain": "cheflink-42508.firebaseapp.com",
-            "projectId": "cheflink-42508",
+            "apiKey": os.getenv("FIREBASE_API_KEY"),
+            "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN"),
+            "projectId": os.getenv("FIREBASE_PROJECT_ID"),
             "databaseURL": "",
-            "storageBucket": "cheflink-42508.appspot.com",
-            "messagingSenderId": "985394133585",
-            "appId": "1:985394133585:web:7e71ce339082b6639b5670",
-            "measurementId": "G-Q1CQJJT48Z"
+            "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET"),
+            "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID"),
+            "appId": os.getenv("FIREBASE_APP_ID"),
+            "measurementId": os.getenv("FIREBASE_MEASUREMENT_ID")
         }
         self.pyrebase = pyrebase.initialize_app(config)
         self.auth = self.pyrebase.auth()
-        user = self.auth.refresh(user['refreshToken'])
-        user['idToken']
         
     def sign_up(self, email, password):
         user = self.auth.create_user_with_email_and_password(email=email, password=password)
@@ -30,7 +25,7 @@ class Firebase():
         # email_ver = self.auth.get_account_info(user['idToken'])['users'][0]['emailVerified']
         # if email_ver:
         # print(user)
-        return user.get('idToken')
+        return user.get('localId')
         # return
     
     # def send_pw_reset_mail(self, email):
