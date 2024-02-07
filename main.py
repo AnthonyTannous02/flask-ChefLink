@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_login import LoginManager
 from flask_session import Session
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config["SPRING_BOOT_URL"] = "http://10.31.197.153:8080"
 
+CORS(app)
 session = Session(app)
 login_manager = LoginManager()
 
@@ -18,4 +20,4 @@ app.register_blueprint(auth_bp, url_prefix="/auth")
 #     except:
 #         return
 
-app.run(debug=True, host="0.0.0.0", port="5000")
+# app.run(debug=True, host="0.0.0.0", port="5000")
