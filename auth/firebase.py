@@ -17,6 +17,8 @@ class Firebase():
         }
         self.pyrebase = pyrebase.initialize_app(config)
         self.auth = self.pyrebase.auth()
+        user = self.auth.refresh(user['refreshToken'])
+        user['idToken']
         
     def sign_up(self, email, password):
         user = self.auth.create_user_with_email_and_password(email=email, password=password)
@@ -28,7 +30,7 @@ class Firebase():
         # email_ver = self.auth.get_account_info(user['idToken'])['users'][0]['emailVerified']
         # if email_ver:
         # print(user)
-        return user.get('localId')
+        return user.get('idToken')
         # return
     
     # def send_pw_reset_mail(self, email):
