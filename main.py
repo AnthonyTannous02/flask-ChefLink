@@ -11,11 +11,11 @@ login_manager = LoginManager()
 from auth import bp as auth_bp
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
-@login_manager.user_loader
-def load_user(user_id):
-    try:
-        return 
-    except:
-        return
+# @login_manager.user_loader
+# def load_user(user_id):
+#     try:
+#         return 
+#     except:
+#         return
 
-# return app.run(debug=True, host="0.0.0.0", port="5000")
+app.run(debug=True, host="0.0.0.0", port="5000")
