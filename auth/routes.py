@@ -9,7 +9,7 @@ from flask_jwt_extended import (
     )
 
 
-@bp.route("/register", methods=["POST"])
+@bp.route("/register", methods=["PUT"])
 def register():
     email = request.json['email']
     gender = request.json['gender']
@@ -21,18 +21,20 @@ def register():
     username = request.json['username']
     pp_url = request.json['pp_url']
     
-    if(not phone_nb[1:].is_digit() or phone_nb[0] != "+"):
+    if(not phone_nb[1:].isdigit() or phone_nb[0] != "+"):
         return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
     
-    try:
-        with Firebase() as fb:
+    with Firebase() as fb:
+        try:
             uid = fb.sign_up(email, password)
             if uid:
-                if sb.add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, date_of_birth):
+                sc = sb.add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, date_of_birth)
+                print(sc)
+                if sc == 201:
                     return {"status": "SUCCESS"}, 200
             return {"status": "FAIL", "error": "INVALID_CREDENTIALS"}, 400
-    except Exception as e:
-        return {"status": "FAIL", "error": str(e)}, 400
+        except Exception as e:
+            return {"status": "FAIL", "error": str(e)}, 400
 
 
 @bp.route("/login", methods=["POST"])           ## TODO include Phone Number & SMS verification

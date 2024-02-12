@@ -36,7 +36,7 @@ class SpringBoot():
         
     @staticmethod
     def add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob):
-        url = SpringBoot.get_url("Customer", "add")
+        url = SpringBoot.get_url("Customer", "Add")
         payload = json.dumps({
             "uUID": uid,
             "username": username,
@@ -49,7 +49,7 @@ class SpringBoot():
             "p_URL": pp_url
         })
         headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("PUT", url, headers=headers, data=payload)
         print(response.text)
         # raise HTTPError("xxx")
-        return response.status_code == 200
+        return response.status_code

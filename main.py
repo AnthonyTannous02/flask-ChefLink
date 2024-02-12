@@ -17,7 +17,7 @@ app.config["JWT_COOKIE_SECURE"] = True
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 
-CORS(app)
+CORS(app, supports_credentials=True)
 jwt = JWTManager(app)
 jwt.init_app(app)
 
