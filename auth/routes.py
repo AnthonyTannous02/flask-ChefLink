@@ -89,4 +89,9 @@ def logout():
 @bp.route("/")
 @jwt_required()
 def index():
-    return {"test": "Hello, World! I am the auth blueprint from Flask."}
+    resp = sb.get_attrib("uUID", current_user["uUID"])
+    return {"Message": "Hello, " + resp["username"] + ". Welcome to the Auth Blueprint!",
+            "uUID": resp["uUID"],
+            "username": resp["username"],
+            "email": resp["email"],
+            "phone_nb": resp["phone_Number"],}

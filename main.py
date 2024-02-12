@@ -1,4 +1,4 @@
-from flask import Flask, Response, jsonify
+from flask import Flask, jsonify
 from load_dotenv import load_dotenv
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -37,7 +37,6 @@ def refresh_expiring_jwts(response):
             set_access_cookies(response, access_token)
         return response
     except (RuntimeError, KeyError):
-        # Case where there is not a valid JWT. Just return the original response
         return response
 
 @jwt.expired_token_loader
@@ -54,7 +53,10 @@ def invalid_token_callback(error):
 def unauthorized_token_callback(error):
     return {"status": "FAIL", "error": "UNAUTHORIZED"}, 401
 
-from auth import bp as auth_bp
-app.register_blueprint(auth_bp, url_prefix="/auth")
+from auth import bp as auth
+from explore import bp as explore
+
+app.register_blueprint(auth, url_prefix="/auth")
+app.register_blueprint(explore, url_prefix="/explore")
 
 app.run(debug=True, host="0.0.0.0", port="5000", threaded=True, load_dotenv=True)

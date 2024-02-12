@@ -10,29 +10,32 @@ class SpringBoot():
         return str(current_app.config["SPRING_BOOT_URL"]) + "/api/" + table + "/" + endpoint
     
     @staticmethod
-    def get_attrib(attribs, id_type, value): ## TODO
-        url = SpringBoot.get_url("Customer", "get_attrib")
+    def get_attrib(id_type, value, 
+                attribs=["uUID", "username", "email", 
+                        "phone_Number", "gender", "firstName", 
+                        "lastName", "dateOfBirth", "p_URL"]):
+        
+        url = SpringBoot.get_url("Customer", "GetAttrib")
         payload = json.dumps({"attribs": attribs, 
                             "id_type": id_type, 
                             "value": value})
         headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("GET", url, headers=headers, data=payload)
         resp = response.text
         print(resp)        
-        return resp
-    
-    # @staticmethod
-    # def get_email(id_type, value):
-    #     get_attrib_resp = SpringBoot.get_attrib(["email"], id_type, value)
-    #     if get_attrib_resp:
-    #         email = json.loads(get_attrib_resp)["email"]
-    #         return email
-    #     else:
-    #         raise HTTPError("USER_NOT_FOUND")
+        return json.loads(resp)
     
     @staticmethod
     def get_email(id_type, value):
-        return value
+        get_attrib_resp = SpringBoot.get_attrib(id_type, value, ["email"])
+        if "email" in get_attrib_resp:
+            return get_attrib_resp["email"]
+        else:
+            raise HTTPError("WRONG_UN_PW")
+    
+    # @staticmethod
+    # def get_email(id_type, value):
+    #     return value
         
     @staticmethod
     def add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob):
