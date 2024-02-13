@@ -59,4 +59,4 @@ from explore import bp as explore
 app.register_blueprint(auth, url_prefix="/auth")
 app.register_blueprint(explore, url_prefix="/explore")
 
-app.run(debug=True, host="0.0.0.0", port="5000", threaded=True, load_dotenv=True)
+# app.run(debug=True, host="0.0.0.0", port="5000", threaded=True, load_dotenv=True)
