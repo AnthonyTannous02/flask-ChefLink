@@ -9,7 +9,7 @@ from flask_jwt_extended import (
     )
 
 
-@bp.route("/register", methods=["PUT"])
+@bp.route("/register", methods=["PUT"])             ## TODO include Phone Number & SMS verification
 def register():
     email = request.json['email']
     gender = request.json['gender']
@@ -34,6 +34,12 @@ def register():
                     return {"status": "SUCCESS"}, 200
             return {"status": "FAIL", "error": "INVALID_CREDENTIALS"}, 400
         except Exception as e:
+            if "EMAIL_EXISTS" in str(e):
+                return {"status": "FAIL", "error": "EMAIL_EXISTS"}, 400
+            elif "WEAK_PASSWORD" in str(e):
+                return {"status": "FAIL", "error": "WEAK_PASSWORD"}, 400
+            elif "INVALID_EMAIL" in str(e):
+                return {"status": "FAIL", "error": "INVALID_EMAIL"}, 400
             return {"status": "FAIL", "error": str(e)}, 400
 
 
@@ -64,10 +70,12 @@ def login():
                 return resp, 200
         return {"status": "FAIL", "error": "WRONG_UN_PW"}, 400
     except Exception as e:
+        if "EMAIL_NOT_FOUND" in str(e):
+            return {"status": "FAIL", "error": "EMAIL_NOT_FOUND"}, 400
         return {"status": "FAIL", "error": str(e)}, 400
 
 
-@bp.route("/refresh", methods=["GET"])
+@bp.route("/refresh", methods=["GET"])      ## TODO to remove
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
