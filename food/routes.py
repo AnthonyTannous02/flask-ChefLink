@@ -20,4 +20,4 @@ def food_by_cuisine():
         cuisines, foods = sb.get_explore_foods_by_cuisine(10)
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
-    return {"status": "SUCCESS", "data": {"perks": list(cuisines), "foods": foods}}, 200
+    return {"status": "SUCCESS", "data": {"cuisines": list(cuisines), "foods": foods}}, 200
