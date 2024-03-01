@@ -2,9 +2,9 @@ from requests import HTTPError
 import requests
 import json
 from flask import current_app
-from auth.User import User
 
-class SpringBoot():
+
+class SpringBoot:
     @staticmethod
     def get_email(id_type, value):
         get_attrib_resp = SpringBoot.__get_attrib(id_type, value, ["email"])
@@ -12,44 +12,85 @@ class SpringBoot():
             return get_attrib_resp["email"]
         else:
             raise HTTPError("WRONG_UN_PW")
-        
+
     @staticmethod
-    def add_user(uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob):
+    def add_user(
+        uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob
+    ):
         url = SpringBoot.__get_url("Customer", "Add")
-        payload = json.dumps({
-            "uUID": uid,
-            "username": username,
-            "email": email,
-            "phone_Number": phone_nb,
-            "gender": gender,
-            "firstName": first_name,
-            "lastName": last_name,
-            "dateOfBirth": dob,
-            "p_URL": pp_url
-        })
-        headers = {'Content-Type': 'application/json'}
+        payload = json.dumps(
+            {
+                "uUID": uid,
+                "username": username,
+                "email": email,
+                "phone_Number": phone_nb,
+                "gender": gender,
+                "firstName": first_name,
+                "lastName": last_name,
+                "dateOfBirth": dob,
+                "p_URL": pp_url,
+            }
+        )
+        headers = {"Content-Type": "application/json"}
         response = requests.request("PUT", url, headers=headers, data=payload)
         print(response.text)
         # raise HTTPError("xxx")
         return response.status_code
-    
+
+    @staticmethod
+    def get_email_jwt_claims(id_type, value):
+        get_attrib_resp = SpringBoot.__get_attrib(
+            id_type, value, ["email", "username", "p_URL"]
+        )
+        if (
+            "username" in get_attrib_resp
+            and "p_URL" in get_attrib_resp
+            and "email" in get_attrib_resp
+        ):
+            return (
+                get_attrib_resp["email"],
+                get_attrib_resp["username"],
+                get_attrib_resp["p_URL"],
+            )
+        else:
+            raise HTTPError("WRONG_CREDENTIALS")
+
+    @staticmethod
+    def test(id_type, value):
+        resp = SpringBoot.__get_attrib(id_type, value)
+        return resp
+
     @staticmethod
     def __get_url(table, endpoint):
-        return str(current_app.config["SPRING_BOOT_URL"]) + "/api/" + table + "/" + endpoint
-    
+        return (
+            str(current_app.config["SPRING_BOOT_URL"])
+            + "/api/"
+            + table
+            + "/"
+            + endpoint
+        )
+
     @staticmethod
-    def __get_attrib(id_type, value, 
-                attribs=["uUID", "username", "email", 
-                        "phone_Number", "gender", "firstName", 
-                        "lastName", "dateOfBirth", "p_URL"]):
-        
+    def __get_attrib(
+        id_type,
+        value,
+        attribs=[
+            "uUID",
+            "username",
+            "email",
+            "phone_Number",
+            "gender",
+            "firstName",
+            "lastName",
+            "dateOfBirth",
+            "p_URL",
+        ],
+    ):
+
         url = SpringBoot.__get_url("Customer", "GetAttrib")
-        payload = json.dumps({"attribs": attribs, 
-                            "id_type": id_type, 
-                            "value": value})
-        headers = {'Content-Type': 'application/json'}
+        payload = json.dumps({"attribs": attribs, "id_type": id_type, "value": value})
+        headers = {"Content-Type": "application/json"}
         response = requests.request("GET", url, headers=headers, data=payload)
         resp = response.text
-        print(resp)        
+        print(resp)
         return json.loads(resp)
-    

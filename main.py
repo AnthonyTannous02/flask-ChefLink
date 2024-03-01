@@ -2,18 +2,23 @@ from flask import Flask, jsonify
 from load_dotenv import load_dotenv
 from flask_cors import CORS
 from flask_jwt_extended import (
-        JWTManager, get_jwt, set_access_cookies, unset_jwt_cookies,
-        get_jwt_identity, create_access_token,
-    )
+    JWTManager,
+    get_jwt,
+    set_access_cookies,
+    unset_jwt_cookies,
+    get_jwt_identity,
+    create_access_token,
+)
 from datetime import datetime, timezone, timedelta
 import os
+
 
 def run_app():
     load_dotenv()
 
     app = Flask(__name__)
     app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
-    app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_COOKIE_SECURE"] = True
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
@@ -55,11 +60,15 @@ def run_app():
         return {"status": "FAIL", "error": "UNAUTHORIZED"}, 401
 
     from auth import bp as auth
-    from explore import bp as explore
+    from food import bp as food
 
     app.register_blueprint(auth, url_prefix="/auth")
-    app.register_blueprint(explore, url_prefix="/explore")
-    
+    app.register_blueprint(food, url_prefix="/food")
+
+    @app.route("/cron")
+    def cron():
+        return {}, 200
+
     return app
 
 
