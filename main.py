@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask_pymongo import PyMongo
 from load_dotenv import load_dotenv
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -10,20 +11,22 @@ from flask_jwt_extended import (
     create_access_token,
 )
 from datetime import datetime, timezone, timedelta
-import os
-
+import os, signal
 
 def run_app():
     load_dotenv()
-
     app = Flask(__name__)
+    # app.config["SPRING_BOOT_URL"] = os.getenv("LOCAL_SB_URL")
     app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_COOKIE_SECURE"] = True
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
     CORS(app, supports_credentials=True)
+    # mongo = PyMongo(app, uri=app.config["MONGO_URI"])
+    # app.config["mongo"] = mongo.db.client
     jwt = JWTManager(app)
     jwt.init_app(app)
 
@@ -57,11 +60,14 @@ def run_app():
 
     @jwt.unauthorized_loader
     def unauthorized_token_callback(error):
+        print(error)
         return {"status": "FAIL", "error": "UNAUTHORIZED"}, 401
 
+    from util import bp as util
     from auth import bp as auth
     from food import bp as food
 
+    app.register_blueprint(util)
     app.register_blueprint(auth, url_prefix="/auth")
     app.register_blueprint(food, url_prefix="/food")
 

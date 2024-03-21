@@ -1,59 +1,58 @@
+import traceback
 from requests import HTTPError
 import requests
 import json
 from flask import current_app
+from util.sb_interfacer import SB_Interfacer
 
-
-class SpringBoot:
+class SpringBoot(SB_Interfacer):
     # CRUD operations for food
-    @staticmethod
-    def get_explore_foods_by_cuisine(
-        amount_per_category=10,
-    ):
+    def __init__(self):
+        super().__init__()
+
+    def get_explore_foods_by_cuisine(self, amount_per_category=10):
         data = {
             "amount": amount_per_category,
-            "group_by": "cuisine",
-            "attribs": [
-                "name",
-                "price",
-                "picture",
-                "cuisine",
-                "total_rating",
-                "time_till_completion",
-            ],
+            "group_by": "category.cuisine"
         }
-        # resp = SpringBoot.__send_request("get_explore_food", "GET", data)             ## TODO Replace with this line
-        resp = SpringBoot.__send_dummy_request(
-            "http://127.0.0.1:3030/get", "GET"
-        )  ## TODO Remove this line
-        cuisines = resp.keys()
-        return cuisines, resp
+        try:
+            resp = self.__send_request("get_explore_food", "GET", data)["data"]
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+        cuisines = set()
+        for c in resp:
+            cuisines.add(c["_id"])
+        return list(cuisines), resp
 
-    @staticmethod
-    def get_explore_foods_by_perk(
-        amount_per_category=5,
-    ):
+    def get_explore_foods_by_perk(self, amount_per_category=10):
         data = {
             "amount": amount_per_category,
-            "group_by": "perk",
-            "attribs": [
-                "name",
-                "price",
-                "picture",
-                "cuisine",
-                "total_rating",
-                "time_till_completion",
-            ],
+            "group_by": "category.perks"
         }
-        # resp = SpringBoot.__send_request("get_explore_food", "GET", data)             ## TODO Replace with this line
-        resp = SpringBoot.__send_dummy_request(
-            "http://127.0.0.1:3030/get2", "GET"
-        )  ## TODO Remove this line
-        perks = resp.keys()
-        return perks, resp
+        try:
+            resp = self.__send_request("get_explore_food", "GET", data)["data"]
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+        perks = set()
+        for food in resp:
+            for perk in food["_id"]:
+                perks.add(perk)
+        
+        return list(perks), resp
 
-    @staticmethod
-    def __send_dummy_request(url, method, body=None):
+    def get_ingred_options(self, food_id):
+        try:
+            resp = self.__send_request("get_ingredients_option", "GET", {"id_food": food_id})
+        except json.JSONDecodeError as e:
+            raise HTTPError("FOOD_NOT_FOUND")
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+        return resp
+
+    def __send_dummy_request(self, url, method, body=None):
         if body:
             payload = json.dumps(body)
         else:
@@ -63,21 +62,11 @@ class SpringBoot:
         resp = response.text
         return json.loads(resp)
 
-    @staticmethod
-    def __send_request(endpoint, method, body):
-        url = SpringBoot.__get_url("food", endpoint)
+    def __send_request(self, endpoint, method, body):
+        url = self._get_url("food", endpoint)
         payload = json.dumps(body)
         headers = {"Content-Type": "application/json"}
         response = requests.request(method, url, headers=headers, data=payload)
         resp = response.text
+        print(resp) ## TODO Remove this line
         return json.loads(resp)
-
-    @staticmethod
-    def __get_url(table, endpoint):
-        return (
-            str(current_app.config["SPRING_BOOT_URL"])
-            + "/api/"
-            + table
-            + "/"
-            + endpoint
-        )

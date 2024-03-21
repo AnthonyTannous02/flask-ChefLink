@@ -1,7 +1,7 @@
 from auth import bp
 from flask import jsonify, request
 from auth.firebase import Firebase
-from auth.sb_interface import SpringBoot as sb
+from auth.sb_interface import SpringBoot
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -34,20 +34,21 @@ def register():
         try:
             uid = fb.sign_up(email, password)
             if uid:
-                sc = sb.add_user(
-                    uid,
-                    email,
-                    phone_nb,
-                    first_name,
-                    last_name,
-                    username,
-                    pp_url,
-                    gender,
-                    date_of_birth,
-                )
-                print(sc)
-                if sc == 201:
-                    return {"status": "SUCCESS"}, 200
+                with SpringBoot() as sb:
+                    sc = sb.add_user(
+                        uid,
+                        email,
+                        phone_nb,
+                        first_name,
+                        last_name,
+                        username,
+                        pp_url,
+                        gender,
+                        date_of_birth,
+                    )
+                    print(sc)
+                    if sc == 201:
+                        return {"status": "SUCCESS"}, 200
             return {"status": "FAIL", "error": "INVALID_CREDENTIALS"}, 400
         except Exception as e:
             if "EMAIL_EXISTS" in str(e):
@@ -66,14 +67,17 @@ def login():
 
     try:
         password = request.json["password"]
-        if "username" in request.json:
-            username = request.json["username"]
-            email, username, p_URL = sb.get_email_jwt_claims("username", username)
-        elif "phone_nb" in request.json:
-            phone_nb = request.json["phone_nb"]
-            email, username, p_URL = sb.get_email_jwt_claims("phone_Number", phone_nb)
-        else:
-            return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
+        with SpringBoot() as sb:
+            if "username" in request.json:
+                username = request.json["username"]
+                email, username, p_URL = sb.get_email_jwt_claims("username", username)
+            elif "phone_nb" in request.json:
+                phone_nb = request.json["phone_nb"]
+                email, username, p_URL = sb.get_email_jwt_claims(
+                    "phone_Number", phone_nb
+                )
+            else:
+                return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
 
         with Firebase() as fb:
             id = fb.sign_in(email, password)
@@ -105,6 +109,29 @@ def logout():
     return resp, 200
 
 
+@bp.route("/add_rem_bookmarks", methods=["PUT"])
+@jwt_required()
+def add_rem_bookmarks():
+    try:
+        food_id = request.json["food_id"]
+        with SpringBoot() as sb:
+            resp = sb.add_rem_bookmarks(current_user["uUID"], food_id)
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "msg": resp}, 200
+
+
+@bp.route("/get_bookmarks", methods=["GET"])
+@jwt_required()
+def get_bookmarks():
+    try:
+        with SpringBoot() as sb:
+            resp = sb.get_bookmarks(current_user["uUID"])
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "msg": resp}, 200
+
+
 @bp.route("/get_profile", methods=["GET"])
 @jwt_required(optional=True)
 def get_profile():
@@ -125,7 +152,8 @@ def get_profile():
 @bp.route("/")
 @jwt_required()
 def index():
-    resp = sb.test("uUID", current_user["uUID"])
+    with SpringBoot() as sb:
+        resp = sb.test("uUID", current_user["uUID"])
     return {
         "Message": "Hello, " + resp["username"] + ". Welcome to the Auth Blueprint!",
         "uUID": resp["uUID"],
