@@ -1,7 +1,7 @@
 import traceback
 
 
-class Interfacer:
+class ContextManager:
     def __init__(self):
         pass
 

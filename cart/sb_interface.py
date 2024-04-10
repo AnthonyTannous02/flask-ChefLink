@@ -1,6 +1,5 @@
 import json, requests
 import traceback
-from flask_jwt_extended import current_app
 from util.sb_interfacer import SB_Interfacer
 
 class SpringBoot(SB_Interfacer):
@@ -8,18 +7,18 @@ class SpringBoot(SB_Interfacer):
     def __init__(self):
         super().__init__()
 
-    def get_active_cart(self, uUID):
-        data = {
-            "user_id": uUID,
-            "status": "A",
-            "attribs": [
-                "cart_id",
-                "user_id",
-                "status",
-            ],
-        }
-        # resp = self.__send_request("get_cart", "GET", data)             ## TODO Replace with this line
-        resp = self.__send_dummy_request("http://127.0.0.1:3030/get_cart1", "GET", data)
+    # def get_stand_by_cart(self, uUID):
+    #     data = {
+    #         "user_id": uUID,
+    #         "status": "Active",
+    #         "attribs": [
+    #             "cart_id",
+    #             "user_id",
+    #             "status",
+    #         ],
+    #     }
+    #     # resp = self.__send_request("get_cart", "GET", data)             ## TODO Replace with this line
+    #     resp = self.__send_dummy_request("http://127.0.0.1:3030/get_cart1", "GET", data)
 
     def __send_dummy_request(self, url, method, body=None):
         if body:

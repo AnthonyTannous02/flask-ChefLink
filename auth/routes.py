@@ -82,7 +82,8 @@ def login():
         with Firebase() as fb:
             id = fb.sign_in(email, password)
             if id:
-                additional_claims = {"username": username, "p_URL": p_URL}  ## TODO
+                role = "Customer"                                                       ## TODO: Make it dynamic
+                additional_claims = {"username": username, "p_URL": p_URL, "role": role}  ## TODO
                 access_token = create_access_token(
                     identity=id, additional_claims=additional_claims
                 )

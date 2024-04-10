@@ -9,6 +9,8 @@ from flask_jwt_extended import (
     unset_jwt_cookies,
     get_jwt_identity,
     create_access_token,
+    set_refresh_cookies,
+    create_refresh_token,
 )
 from datetime import datetime, timezone, timedelta
 import os, signal
@@ -16,8 +18,8 @@ import os, signal
 def run_app():
     load_dotenv()
     app = Flask(__name__)
-    # app.config["SPRING_BOOT_URL"] = os.getenv("LOCAL_SB_URL")
-    app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
+    app.config["SPRING_BOOT_URL"] = os.getenv("LOCAL_SB_URL")
+    # app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_COOKIE_SECURE"] = True
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
@@ -25,8 +27,8 @@ def run_app():
     app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
     CORS(app, supports_credentials=True)
-    # mongo = PyMongo(app, uri=app.config["MONGO_URI"])
-    # app.config["mongo"] = mongo.db.client
+    mongo = PyMongo(app, uri=app.config["MONGO_URI"])
+    app.config["mongo"] = mongo.db.client
     jwt = JWTManager(app)
     jwt.init_app(app)
 
@@ -38,11 +40,15 @@ def run_app():
     @app.after_request
     def refresh_expiring_jwts(response):
         try:
+            claims = get_jwt()
             exp_timestamp = get_jwt()["exp"]
             now = datetime.now(timezone.utc)
             target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
             if target_timestamp > exp_timestamp:
-                access_token = create_access_token(identity=get_jwt_identity())
+                access_token = create_access_token(
+                    identity=get_jwt_identity(),
+                    additional_claims={"username": claims["username"], "p_URL": claims["p_URL"], "role": claims["role"]},
+                    )
                 set_access_cookies(response, access_token)
             return response
         except (RuntimeError, KeyError):
@@ -66,10 +72,14 @@ def run_app():
     from util import bp as util
     from auth import bp as auth
     from food import bp as food
+    from cart import bp as cart
+    from location import bp as location
 
     app.register_blueprint(util)
     app.register_blueprint(auth, url_prefix="/auth")
     app.register_blueprint(food, url_prefix="/food")
+    app.register_blueprint(cart, url_prefix="/cart")
+    app.register_blueprint(location, url_prefix="/location")
 
     @app.route("/cron")
     def cron():
