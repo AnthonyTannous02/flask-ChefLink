@@ -250,4 +250,41 @@ class Mongo(MG_Interfacer):
                 order["price"] = str(order["price"])
         except Exception as e:
             raise Exception("DB_CONNECTION_FAILED")
-        return orders
+        return orders    
+
+    def get_bundle_info(self, bundle_ids: list) -> list:
+        bundles = []
+        try:
+            Cursor = self._conn.Bundle.aggregate([
+                    {"$match": {"id_bundle": {"$in": bundle_ids}}},
+                    {"$project": {"_id": 0, "_class": 0}}
+                ])
+            while Cursor.alive:
+                bundle = Cursor.next()
+                bundle["total_bundle_price"] = str(bundle["total_bundle_price"])
+                food = self._conn.Food.find_one(
+                    {"id_food": bundle["id_food"]},
+                    {
+                        "_id": 0, 
+                        "id_food": 1,
+                        "name": 1,
+                        "picture": 1,
+                        "price": 1,
+                        "timing": 1,
+                        "total_rating": 1,
+                        "options": 1,
+                    }
+                )
+                options = []
+                if food is not None:
+                    for option in food["options"]:
+                        if option["option_name"] in bundle["id_options"]:
+                            options.append(option)
+                    food["options"] = options
+                    del bundle["id_options"]
+                    bundle["food"] = food
+                bundles.append(bundle)
+            
+        except Exception as e:
+            raise Exception("DB_CONNECTION_FAILED")
+        return bundles

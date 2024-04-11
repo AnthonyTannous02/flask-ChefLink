@@ -118,7 +118,7 @@ def checkout_cart():
 
 @bp.route("/get_order_history", methods=["GET"])
 @jwt_required()
-def test():
+def get_order_history():
     try:
         with Mongo() as mg:
             order_history = mg.get_order_history(current_user["uUID"])
@@ -126,3 +126,15 @@ def test():
         print(str(e))
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS", "data": order_history}, 200
+
+
+@bp.route("/get_bundle_info", methods=["GET"])
+def get_bundle_info():
+    try:
+        bundle_ids: list = request.json["bundle_ids"]
+        with Mongo() as mg:
+            bundle_info = mg.get_bundle_info(bundle_ids)
+    except Exception as e:
+        print(str(e))
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "data": bundle_info}, 200

@@ -12,7 +12,7 @@ class Mongo(MG_Interfacer):
             if not search.isalnum():
                 return []
             foods = list(
-                self.__get_conn().Food.find(
+                self._conn.Food.find(
                     {"name": {"$regex": search, "$options": "i"}},
                     {
                         "name": 1,
@@ -24,18 +24,27 @@ class Mongo(MG_Interfacer):
                     },
                 )
             )
-            for food in foods:
-                food_id = food["id_food"]
-                food["chef_name"] = self.__get_conn().Chef.find_one(
-                    {"id_food_list": food_id},
-                    {
-                        "username": 1,
-                        "id_food": {"$arrayElemAt": ["$id_food_list", 0]},
-                        "_id": 0,
-                    },
-                )["username"]
         except:
             raise Exception("DB_CONNECTION_FAILED")
+        
+        for food in foods:
+            try:
+                food_id = food["id_food"]
+            except Exception as e:
+                print(str(e))
+                raise Exception("FOOD_NOT_FOUND")
+            try:
+                food["chef_name"] = self._conn.Chef.find_one(
+                    {"foodList": food_id},
+                    {
+                        "usernameChef": 1,
+                        "id_food": {"$arrayElemAt": ["$foodList", 0]},
+                        "_id": 0,
+                    },
+                )["usernameChef"]
+            except Exception as e:
+                print(str(e))
+                raise Exception("CHEF_NOT_FOUND")
         return foods
 
     def search_chefs(self, search: str) -> list:  ## TODO: Improve this function
@@ -43,12 +52,13 @@ class Mongo(MG_Interfacer):
             if not search.isalnum():
                 return []
             chefs = list(
-                self.__get_conn().Chef.find(
-                    {"username": {"$regex": search, "$options": "i"}},
-                    {"username": 1, "_id": 0},
-                    ## TODO: Add chef ppf url here
+                self._conn.Chef.find(
+                    {"usernameChef": {"$regex": search, "$options": "i"}},
+                    {"usernameChef": 1, "uUID": 1, "p_URL": 1, "_id": 0},
+                    ## TODO: Add total rating for the chef
                 )
             )
+            print(chefs)
         except:
             raise Exception("DB_CONNECTION_FAILED")
         return chefs
@@ -57,7 +67,7 @@ class Mongo(MG_Interfacer):
         try:
             filter = "category." + filter
             foods = list(
-                self.__get_conn().Food.find(
+                self._conn.Food.find(
                     {filter: select},
                     {
                         "name": 1,
@@ -71,14 +81,14 @@ class Mongo(MG_Interfacer):
             )
             for food in foods:
                 food_id = food["id_food"]
-                food["chef_name"] = self.__get_conn().Chef.find_one(
-                    {"id_food_list": food_id},
+                food["chef_name"] = self._conn.Chef.find_one(
+                    {"foodList": food_id},
                     {
-                        "username": 1,
-                        "id_food": {"$arrayElemAt": ["$id_food_list", 0]},
+                        "usernameChef": 1,
+                        "id_food": {"$arrayElemAt": ["$foodList", 0]},
                         "_id": 0,
                     },
-                )["username"]
+                )["usernameChef"]
         except:
             raise Exception("DB_CONNECTION_FAILED")
         return foods
@@ -86,7 +96,7 @@ class Mongo(MG_Interfacer):
     def get_food_min_info(self, food_ids: str) -> dict:
         food = {}
         try:
-            food = list(self.__get_conn().Food.find(
+            food = list(self._conn.Food.find(
                 {"id_food": {"$in": food_ids}},
                 {
                     "name": 1,
@@ -100,11 +110,11 @@ class Mongo(MG_Interfacer):
         except:
             raise Exception("DB_CONNECTION_FAILED")
         return food
-    
+
     def get_food_full_info(self, food_ids: str) -> dict:
         food = {}
         try:
-            food = list(self.__get_conn().Food.find(
+            food = list(self._conn.Food.find(
                 {"id_food": {"$in": food_ids}},
                 {
                     "_class": 0,
@@ -120,15 +130,15 @@ class Mongo(MG_Interfacer):
     #     food_ids = []
     #     chefs = []
     #     query_chefs = self.search_chefs(chef)
-    #     chefs = [c["username"] for c in query_chefs]
+    #     chefs = [c["usernameChef"] for c in query_chefs]
     #     chef_food_map: dict = {}
     #     try:
-    #         for x in list(self.__get_conn().Chef.find({"username": {"$in": chefs}}, {"id_food_list": 1, "username": 1, "_id": 0})):
-    #             for food_id in x["id_food_list"]:
-    #                 chef_food_map[food_id] = x["username"]
+    #         for x in list(self._conn.Chef.find({"usernameChef": {"$in": chefs}}, {"foodList": 1, "usernameChef": 1, "_id": 0})):
+    #             for food_id in x["foodList"]:
+    #                 chef_food_map[food_id] = x["usernameChef"]
     #                 food_ids.append(food_id)
     #         foods = list(
-    #             self.__get_conn().Food.find(
+    #             self._conn.Food.find(
     #                 {"id_food": {"$in": food_ids}},
     #                 {
     #                     "name": 1,
@@ -146,6 +156,3 @@ class Mongo(MG_Interfacer):
     #     except Exception as e:
     #         raise Exception("DB_CONNECTION_FAILED")
     #     return foods
-
-    def __get_conn(self) -> Database:
-        return self._conn

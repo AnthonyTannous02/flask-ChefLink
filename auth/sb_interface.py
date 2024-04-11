@@ -73,7 +73,7 @@ class SpringBoot(SB_Interfacer):
             raise HTTPError(resp["description"])
 
     def get_bookmarks(self, user_id):
-        url = self._get_url("", "getFoodId")
+        url = self._get_url("", "getBookMarkedFoodId")
         payload = json.dumps({"uUID": user_id})
         headers = {"Content-Type": "application/json"}
         resp:dict = json.loads(requests.request("GET", url, headers=headers, data=payload).text)
