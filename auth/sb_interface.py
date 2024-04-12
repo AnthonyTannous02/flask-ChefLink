@@ -18,9 +18,10 @@ class SpringBoot(SB_Interfacer):
             raise HTTPError("WRONG_UN_PW")
 
     def add_user(
-        self, uid, email, phone_nb, first_name, last_name, username, pp_url, gender, dob
+        self, fb, email, phone_nb, first_name, last_name, username, pp_url, gender, dob, password
     ):
-        url = self._get_url("Customer", "Add")
+        uid = fb.sign_up(email, password)
+        url = self._get_url("Customer", "AddC")
         payload = json.dumps(
             {
                 "uUID": uid,
@@ -37,18 +38,15 @@ class SpringBoot(SB_Interfacer):
         )
         headers = {"Content-Type": "application/json"}
         resp = requests.request("PUT", url, headers=headers, data=payload)
-        # raise HTTPError("xxx")
-        return resp.status_code
+        print(resp)
+        if resp.status_code != 200:
+            raise Exception("SB_CONNECTION_FAILED")
 
     def get_email_jwt_claims(self, id_type, value):
         get_attrib_resp = self.__get_attrib(
             id_type, value, ["email", "username", "p_URL"]
         )
-        if (
-            "username" in get_attrib_resp
-            and "p_URL" in get_attrib_resp
-            and "email" in get_attrib_resp
-        ):
+        if ("username" in get_attrib_resp and "p_URL" in get_attrib_resp and "email" in get_attrib_resp):
             return (
                 get_attrib_resp["email"],
                 get_attrib_resp["username"],

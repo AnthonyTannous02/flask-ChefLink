@@ -2,6 +2,7 @@ from auth import bp
 from flask import jsonify, request
 from auth.firebase import Firebase
 from auth.sb_interface import SpringBoot
+from auth.mg_interface import Mongo
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -32,24 +33,21 @@ def register():
 
     with Firebase() as fb:
         try:
-            uid = fb.sign_up(email, password)
-            if uid:
-                with SpringBoot() as sb:
-                    sc = sb.add_user(
-                        uid,
-                        email,
-                        phone_nb,
-                        first_name,
-                        last_name,
-                        username,
-                        pp_url,
-                        gender,
-                        date_of_birth,
-                    )
-                    print(sc)
-                    if sc == 201:
-                        return {"status": "SUCCESS"}, 200
-            return {"status": "FAIL", "error": "INVALID_CREDENTIALS"}, 400
+            with Mongo() as mg:
+                mg.check_for_dups(username, phone_nb)
+            with SpringBoot() as sb:
+                sb.add_user(
+                    fb,
+                    email,
+                    phone_nb,
+                    first_name,
+                    last_name,
+                    username,
+                    pp_url,
+                    gender,
+                    date_of_birth,
+                    password,
+                )
         except Exception as e:
             if "EMAIL_EXISTS" in str(e):
                 return {"status": "FAIL", "error": "EMAIL_EXISTS"}, 400
@@ -58,6 +56,7 @@ def register():
             elif "INVALID_EMAIL" in str(e):
                 return {"status": "FAIL", "error": "INVALID_EMAIL"}, 400
             return {"status": "FAIL", "error": str(e)}, 400
+        return {"status": "SUCCESS"}, 200
 
 
 @bp.route("/login", methods=["POST"])  ## TODO include Phone Number & SMS verification
