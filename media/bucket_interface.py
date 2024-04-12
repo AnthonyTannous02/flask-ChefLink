@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from util.bucket_interfacer import Bucket_Interfacer
 from google.cloud.exceptions import NotFound, GoogleCloudError
 from google.cloud.storage.blob import Blob
@@ -28,6 +28,7 @@ class BucketInterface(Bucket_Interfacer):
     def gen_url(self, image_path: str, expiration: datetime = datetime.today()) -> str:
         blob = self.__gen_blob(image_path)
         if blob.exists():
+            expiration = datetime.now() + timedelta(minutes=15)
             return blob.generate_signed_url(expiration=expiration, method="GET")
         else:
             return "."

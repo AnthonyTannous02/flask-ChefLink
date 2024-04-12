@@ -19,8 +19,8 @@ import os, signal, firebase_admin
 def run_app():
     load_dotenv()
     app = Flask(__name__)
-    app.config["SPRING_BOOT_URL"] = os.getenv("LOCAL_SB_URL")
-    # app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
+    # app.config["SPRING_BOOT_URL"] = os.getenv("LOCAL_SB_URL")
+    app.config["SPRING_BOOT_URL"] = os.getenv("SPRING_BOOT_URL")
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_COOKIE_SECURE"] = True
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]

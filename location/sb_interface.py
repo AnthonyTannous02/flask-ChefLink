@@ -11,6 +11,7 @@ class SpringBoot(SB_Interfacer):
 
     def get_loc_ids(self, user_id) -> list:
         loc_ids = self._get_attrib_user("uUID", user_id, ["locations"])
+        print(loc_ids)
         return loc_ids["locations"]
 
     def __send_request(self, endpoint, method, body, object="location"):
