@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_pymongo import PyMongo
 from load_dotenv import load_dotenv
 from flask_cors import CORS
+from firebase_admin import credentials
 from flask_jwt_extended import (
     JWTManager,
     get_jwt,
@@ -13,7 +14,7 @@ from flask_jwt_extended import (
     create_refresh_token,
 )
 from datetime import datetime, timezone, timedelta
-import os, signal
+import os, signal, firebase_admin
 
 def run_app():
     load_dotenv()
@@ -26,6 +27,12 @@ def run_app():
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
     app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
+    firebase_admin.initialize_app(
+        credentials.Certificate(os.getenv("FB_ADMIN_CERT")), 
+        {
+            'storageBucket': os.getenv("FB_STORAGE_BUCKET_DEFAULT")
+        }
+    )
     CORS(app, supports_credentials=True)
     mongo = PyMongo(app, uri=app.config["MONGO_URI"])
     app.config["mongo"] = mongo.db.client
@@ -73,12 +80,14 @@ def run_app():
     from auth import bp as auth
     from food import bp as food
     from cart import bp as cart
+    from media import bp as media
     from location import bp as location
 
     app.register_blueprint(util)
     app.register_blueprint(auth, url_prefix="/auth")
     app.register_blueprint(food, url_prefix="/food")
     app.register_blueprint(cart, url_prefix="/cart")
+    app.register_blueprint(media, url_prefix="/media")
     app.register_blueprint(location, url_prefix="/location")
 
     @app.route("/cron")
