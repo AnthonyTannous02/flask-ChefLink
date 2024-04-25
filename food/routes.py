@@ -52,7 +52,7 @@ def food_by_type():
 @bp.route("/get_ingred_options", methods=["GET"])
 def get_ingred_options():
     try:
-        food_id = request.json["food_id"]
+        food_id = request.args['food_id']
         with SpringBoot() as sb:
             ingreds = sb.get_ingred_options(food_id)
             return {"status": "SUCCESS", "data": ingreds}, 200
@@ -63,7 +63,7 @@ def get_ingred_options():
 @bp.route("/search_food", methods=["GET"])
 def search_food():
     try:
-        search: str = request.json["search"]
+        search: str = request.args["search"]
         with Mongo() as mg:
             foods = mg.search_food(search)
             return {"status": "SUCCESS", "data": foods}, 200
@@ -74,7 +74,7 @@ def search_food():
 @bp.route("/search_chefs", methods=["GET"])
 def search_chefs():
     try:
-        search: str = request.json["search"]
+        search: str = request.args["search"]
         with Mongo() as mg:
             chefs = mg.search_chefs(search)
             return {"status": "SUCCESS", "data": chefs}, 200
@@ -85,8 +85,8 @@ def search_chefs():
 @bp.route("/filter_food_by", methods=["GET"])
 def filter_food_by():
     try:
-        filter = request.json["filter"]
-        select = request.json["select"]
+        filter = request.args["filter"]
+        select = request.args["select"]
     except:
         return {
             "status": "FAIL",
@@ -133,7 +133,7 @@ def get_food_full_info():
 @bp.route("/get_food_and_reviews", methods=["GET"])
 def get_food_and_reviews():
     try:
-        food_id = request.json["food_id"]
+        food_id = request.args["food_id"]
         with SpringBoot() as sb:
             food = sb.get_food_and_reviews(food_id)
             return {"status": "SUCCESS", "data": food}, 200

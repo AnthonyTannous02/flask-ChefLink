@@ -35,7 +35,7 @@ def remove_image():
 @bp.route("/generate_image_url", methods=["GET"])
 def generate_image_url():
     try:
-        path = request.json["path"]
+        path = request.args["path"]
         with BucketInterface() as bi:
             url = bi.gen_url(path)
     except Exception as e:

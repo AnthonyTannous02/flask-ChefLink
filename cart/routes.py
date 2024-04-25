@@ -128,7 +128,7 @@ def get_order_history():
     return {"status": "SUCCESS", "data": order_history}, 200
 
 
-@bp.route("/get_bundle_info", methods=["GET"])
+@bp.route("/get_bundle_info", methods=["POST"])
 def get_bundle_info():
     try:
         bundle_ids: list = request.json["bundle_ids"]

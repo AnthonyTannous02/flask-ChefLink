@@ -22,7 +22,7 @@ def get_locations():
 @jwt_required()
 def get_location_by_id():
     try:
-        loc_id = request.json["id_location"]
+        loc_id = request.args["id_location"]
         with Mongo() as mg:
             location_data = mg.get_location_by_id(loc_id)
             return {"status": "SUCCESS", "data": location_data}, 200
