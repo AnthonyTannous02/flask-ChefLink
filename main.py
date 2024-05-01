@@ -10,8 +10,6 @@ from flask_jwt_extended import (
     unset_jwt_cookies,
     get_jwt_identity,
     create_access_token,
-    set_refresh_cookies,
-    create_refresh_token,
 )
 from datetime import datetime, timezone, timedelta
 import os, signal, firebase_admin

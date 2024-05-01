@@ -104,13 +104,13 @@ def checkout_cart():
             if cart is None:
                 raise Exception("NO_CART_ACTIVE")
             mg.checkout_cart(cart, current_user["role"])
-            with DelivSim(
-                time=10, 
-                callback=mg.deliver_order, 
-                args=cart["iD"], 
-                app=current_app._get_current_object()
-            ) as d:
-                d.simulate()
+            # with DelivSim(
+            #     time=10, 
+            #     callback=mg.deliver_order, 
+            #     args=cart["iD"], 
+            #     app=current_app._get_current_object()
+            # ) as d:
+            #     d.simulate()
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS"}, 200

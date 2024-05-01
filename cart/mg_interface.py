@@ -105,6 +105,19 @@ class Mongo(MG_Interfacer):
 
         t1s = time.perf_counter()
         total_bundle_price *= D(str(qty))
+
+        chef_id = self._conn.Chef.find_one(
+                {
+                    "foodList": food_id
+                },
+                {
+                    "_id": 0,
+                    "uUID": 1
+                }
+            )
+        if chef_id is None:
+            raise Exception("CHEF_NOT_FOUND")
+        
         bundle = {
             "id_bundle": bundle_id,
             "id_food": food_id,
@@ -112,6 +125,7 @@ class Mongo(MG_Interfacer):
             "quantity": qty,
             "id_options": chosen_options,
             "total_bundle_price": Dx(total_bundle_price),
+            "id_chef": chef_id["uUID"],
         }
         t1e = time.perf_counter()
         print(t1e - t1s)
@@ -211,15 +225,15 @@ class Mongo(MG_Interfacer):
     def checkout_cart(self, cart: dict, role: str) -> None:
         if len(cart["bundle_ids"]) < 1:
             raise Exception("NO_ITEMS_IN_CART")
-        loc = cart["location"]
-        self.check_location_exists(loc, role)
-        cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
-        cart["status"] = "Ordered"
-        cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        cart["price"] = Dx(cart["price"])
-        self._conn.Cart.update_one(
-            {"iD": cart["iD"]}, {"$set": cart}
-        )
+        # loc = cart["location"]
+        # self.check_location_exists(loc, role)
+        # cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
+        # cart["status"] = "Ordered"
+        # cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        # cart["price"] = Dx(cart["price"])
+        # self._conn.Cart.update_one(
+        #     {"iD": cart["iD"]}, {"$set": cart}
+        # )
 
     def deliver_order(self, cart_id: str) -> None:
         try:
@@ -272,6 +286,7 @@ class Mongo(MG_Interfacer):
                         "price": 1,
                         "timing": 1,
                         "total_rating": 1,
+                        "id_chef": 1,
                         "options": 1,
                     }
                 )
