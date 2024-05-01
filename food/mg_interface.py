@@ -94,7 +94,7 @@ class Mongo(MG_Interfacer):
             raise Exception("DB_CONNECTION_FAILED")
         return foods
 
-    def get_food_min_info(self, food_ids: str) -> dict:
+    def get_food_min_info(self, food_ids: list) -> dict:
         food = {}
         try:
             food = list(self._conn.Food.find(
@@ -105,6 +105,7 @@ class Mongo(MG_Interfacer):
                     "price": 1,
                     "total_rating": 1,
                     "picture": 1,
+                    "timing": 1,
                     "_id": 0,
                 },
             ))

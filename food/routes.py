@@ -189,6 +189,17 @@ def add_food_review():
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
 
+
+@bp.route("/get_minimal_info_food", methods=["POST"])
+def get_minimal_info_food():
+    try:
+        food_ids: list = request.json["id_foods"]
+        with Mongo() as mg:
+            food = mg.get_food_min_info(food_ids)
+            return {"status": "SUCCESS", "data": food}, 200
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+
 # @bp.route("/search_food_by_chef", methods=["GET"])
 # def search_food_by_chef():
 #     try:

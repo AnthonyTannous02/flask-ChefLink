@@ -116,6 +116,27 @@ def checkout_cart():
     return {"status": "SUCCESS"}, 200
 
 
+@bp.route("/place_order", methods=["POST"])
+@jwt_required()
+def place_order():
+    try:
+        with Mongo() as mg:
+            cart = mg.get_stand_by_cart(current_user["uUID"], False)
+            if cart is None:
+                raise Exception("NO_CART_ACTIVE")
+            mg.place_order(cart, current_user["uUID"], current_user["role"])
+            # with DelivSim(
+            #     time=10, 
+            #     callback=mg.deliver_order, 
+            #     args=cart["iD"], 
+            #     app=current_app._get_current_object()
+            # ) as d:
+            #     d.simulate()
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS"}, 200
+
+
 @bp.route("/get_order_history", methods=["GET"])
 @jwt_required()
 def get_order_history():

@@ -222,18 +222,56 @@ class Mongo(MG_Interfacer):
             {"iD": cart_id}, {"$set": update_query}
         )
 
+    def place_order(self, cart: dict, user_id: str, role: str) -> None:
+        if len(cart["bundle_ids"]) < 1:
+            raise Exception("NO_ITEMS_IN_CART")
+        bundles = self._conn.Bundle.find({"id_bundle": {"$in": cart["bundle_ids"]}}, {"_id": 0, "id_bundle": 1, "id_chef": 1, "total_bundle_price": 1})
+        chef_to_bundles: dict = {}
+        for bundle in bundles:
+            if bundle["id_chef"] not in chef_to_bundles:
+                chef_to_bundles[bundle["id_chef"]] = {"bundle_ids": [], "price": D("0")}
+            chef_to_bundles[bundle["id_chef"]]["bundle_ids"].append(bundle["id_bundle"])
+            chef_to_bundles[bundle["id_chef"]]["price"] += D(str(bundle["total_bundle_price"]))
+            
+        new_carts = []
+        chefs_to_cart = {}
+        for chef in chef_to_bundles:
+            new_cart = {
+                "iD": "cart_" + uuid.uuid4().hex,
+                "location": cart["location"],
+                "price": Dx(str(chef_to_bundles[chef]["price"])),
+                "bundle_ids": chef_to_bundles[chef]["bundle_ids"],
+                "order_date": "",
+                "completion_time": "",
+                "status": "Ordered",
+                "delivery_person": "",
+                "payment_method": cart["payment_method"],
+                "user_id": user_id,
+            }
+            new_carts.append(new_cart)
+            chefs_to_cart[chef] = new_cart["iD"]
+        
+        self._conn.Cart.insert_many(new_carts)
+        for chef in chefs_to_cart.keys():
+            self._conn.ChefOrderMatch.update_one(
+                {"id_chef": chef},
+                {"$push": {"active_orders": chefs_to_cart[chef], "finished_orders": {"$each": []}}},
+                upsert=True
+            )
+        
+
     def checkout_cart(self, cart: dict, role: str) -> None:
         if len(cart["bundle_ids"]) < 1:
             raise Exception("NO_ITEMS_IN_CART")
-        # loc = cart["location"]
-        # self.check_location_exists(loc, role)
-        # cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
-        # cart["status"] = "Ordered"
-        # cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        # cart["price"] = Dx(cart["price"])
-        # self._conn.Cart.update_one(
-        #     {"iD": cart["iD"]}, {"$set": cart}
-        # )
+        loc = cart["location"]
+        self.check_location_exists(loc, role)
+        cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
+        cart["status"] = "Ordered"
+        cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        cart["price"] = Dx(cart["price"])
+        self._conn.Cart.update_one(
+            {"iD": cart["iD"]}, {"$set": cart}
+        )
 
     def deliver_order(self, cart_id: str) -> None:
         try:
@@ -256,7 +294,7 @@ class Mongo(MG_Interfacer):
         try:
             orders = list(
                 self._conn.Cart.aggregate([
-                    {"$match": {"user_id": uUID, "status": "Delivered"}},
+                    {"$match": {"user_id": uUID, "status": {"$in": ["Delivered", "Ordered"]}}},
                     {"$project": {"_id": 0, "_class": 0}}
                 ])
             )
