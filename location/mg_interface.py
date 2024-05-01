@@ -17,12 +17,15 @@ class Mongo(MG_Interfacer):
             raise("DB_CONNECTION_FAILED")
         return locs
 
-    def get_location_by_id(self, loc_id: str) -> dict:
+    def get_location_by_id(self, loc_id: str, role: str) -> dict:
         loc_in_user = {}
         loc = {}
         
         try:
-            loc_in_user = self._conn.Customer.find_one({"locations": loc_id}, {"_id": 0})
+            if role == "customer":
+                loc_in_user = self._conn.Customer.find_one({"locations": loc_id}, {"_id": 0})
+            else:
+                loc_in_user = self._conn.Chef.find_one({"locations": loc_id}, {"_id": 0})
             loc = self._conn.Location.find_one({"id_location": loc_id}, {"_id": 0})
         except Exception as e:
             print(str(e))
@@ -32,7 +35,7 @@ class Mongo(MG_Interfacer):
             raise Exception("LOCATION_NOT_FOUND")
         return loc
 
-    def add_location(self, user_id: str, location: dict) -> None:
+    def add_location(self, user_id: str, location: dict, role: str) -> None:
         keys = [
             "location_name",
             "longitude",
@@ -49,23 +52,35 @@ class Mongo(MG_Interfacer):
         try:
             location["id_location"] = "loc_" + uuid.uuid4().hex
             self._conn.Location.insert_one(location)
-                                                        ## TODO: Make Dynamic Chef/Customer
-            self._conn.Customer.update_one(
-                {"uUID": user_id},
-                {"$push": {"locations": location["id_location"]}}
-            )
+            if role == "customer":
+                self._conn.Customer.update_one(
+                    {"uUID": user_id},
+                    {"$push": {"locations": location["id_location"]}}
+                )
+            else:
+                self._conn.Chef.update_one(
+                    {"uUID": user_id},
+                    {"$push": {"locations": location["id_location"]}}
+                )
         except Exception as e:
             print(str(e))
             raise Exception("DB_CONNECTION_FAILED")
 
-    def remove_location(self, user_id: str, loc_id: str) -> None:
+    def remove_location(self, user_id: str, loc_id: str, role: str) -> None:
         res = self._conn.Location.find_one_and_delete({"id_location": loc_id})
         if not res or len(res) < 1:
             raise Exception("LOCATION_NOT_FOUND")
-                                                        ## TODO: Make Dynamic Chef/Customer
-        self._conn.Customer.update_one(
-            {"uUID": user_id},
-            {
-                "$pull": {"locations": loc_id},
-            }
-        )
+        if role == "customer":
+            self._conn.Customer.update_one(
+                {"uUID": user_id},
+                {
+                    "$pull": {"locations": loc_id},
+                }
+            )
+        else:
+            self._conn.Chef.update_one(
+                {"uUID": user_id},
+                {
+                    "$pull": {"locations": loc_id},
+                }
+            )

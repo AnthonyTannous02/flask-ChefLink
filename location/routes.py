@@ -9,7 +9,7 @@ from flask_jwt_extended import jwt_required, current_user
 def get_locations():
     try:
         with SpringBoot() as sb:
-            loc_ids = sb.get_loc_ids(current_user["uUID"])
+            loc_ids = sb.get_loc_ids(current_user["uUID"], current_user["role"])
             print(loc_ids)
             with Mongo() as mg:
                 locations = mg.get_locations(loc_ids)
@@ -24,7 +24,7 @@ def get_location_by_id():
     try:
         loc_id = request.args["id_location"]
         with Mongo() as mg:
-            location_data = mg.get_location_by_id(loc_id)
+            location_data = mg.get_location_by_id(loc_id, current_user["role"])
             return {"status": "SUCCESS", "data": location_data}, 200
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
@@ -36,7 +36,7 @@ def add_location():
     try:
         location = request.json
         with Mongo() as mg:
-            mg.add_location(current_user["uUID"], location)
+            mg.add_location(current_user["uUID"], location, current_user["role"])
         return {"status": "SUCCESS"}, 200
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
@@ -48,7 +48,7 @@ def remove_location():
     try:
         location_id = request.json["id_location"]
         with Mongo() as mg:
-            mg.remove_location(current_user["uUID"], location_id)
+            mg.remove_location(current_user["uUID"], location_id, current_user["role"])
         return {"status": "SUCCESS"}, 200
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400

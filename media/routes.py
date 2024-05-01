@@ -41,3 +41,14 @@ def generate_image_url():
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS", "data": url}, 200
+
+
+@bp.route("/generate_image_url_bulk", methods=["POST"])
+def generate_image_url_bulk():
+    try:
+        paths: list = request.json["paths"]
+        with BucketInterface() as bi:
+            urls = bi.gen_url_bulk(paths)
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "data": urls}, 200

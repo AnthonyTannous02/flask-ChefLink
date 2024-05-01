@@ -1,4 +1,5 @@
 import traceback, pyrebase, requests, os
+from firebase_admin import auth
 
 class Firebase():
     def __init__(self):
@@ -15,13 +16,19 @@ class Firebase():
         self.pyrebase = pyrebase.initialize_app(config)
         self.auth = self.pyrebase.auth()
         
-    def sign_up(self, email, password):
+    def sign_up(self, email, password, role):
         user = self.auth.create_user_with_email_and_password(email=email, password=password)
+        auth.set_custom_user_claims(user.get('localId'), {'role': role})
         return user.get('localId')
     
     def sign_in(self, email, password):
         user = self.auth.sign_in_with_email_and_password(email, password)
-        return user.get('localId')
+        try:
+            role = auth.get_user(user.get('localId')).custom_claims["role"]
+        except Exception as e:
+            role = "customer"
+        print(role)
+        return user.get('localId'), role
     
     @staticmethod
     def raise_err(request_object):

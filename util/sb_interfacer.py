@@ -24,8 +24,12 @@ class SB_Interfacer(ContextManager):
             "dateOfBirth",
             "p_URL",
         ],
+        role="customer",
     ) -> dict:
-        url = self._get_url("Customer", "GetAttrib")
+        if role == "customer":
+            url = self._get_url("Customer", "GetAttrib")
+        else:
+            url = self._get_url("Chef", "GetAttrib")
         payload = json.dumps({"attribs": attribs, "id_type": id_type, "value": value})
         headers = {"Content-Type": "application/json"}
         resp = requests.request("GET", url, headers=headers, data=payload)

@@ -16,8 +16,11 @@ class Mongo(MG_Interfacer):
     def __init__(self):
         super().__init__()
 
-    def check_location_exists(self, loc: str) -> None:
-        cursor = self._conn.Customer.find_one({"locations": loc})
+    def check_location_exists(self, loc: str, role: str) -> None:
+        if role == "customer":
+            cursor = self._conn.Customer.find_one({"locations": loc})
+        else:
+            cursor = self._conn.Chef.find_one({"locations": loc})
         if not cursor or len(cursor) < 1:
             raise Exception("LOCATION_NOT_FOUND")
         return
@@ -134,9 +137,6 @@ class Mongo(MG_Interfacer):
                 "$inc": {"price": Dx("-" + str(res["total_bundle_price"]))},
             },
         )
-        ##################
-        ## TODO: Get the Cost of the bundle and subtract it from the total.
-        ##################
 
     def get_cart_details(self, cart: dict) -> dict:
         result = {}
@@ -184,7 +184,7 @@ class Mongo(MG_Interfacer):
     def delete_cart(self, user_id: str) -> None:
         self._conn.Cart.delete_one({"user_id": user_id, "status": "StandBy"})
 
-    def update_current_cart_attribute(self, cart_id: str, query: dict) -> None:
+    def update_current_cart_attribute(self, cart_id: str, query: dict, role: str) -> None:
         keys = ["new_vals", "to_change"]
         if not all(key in query for key in keys):
             raise Exception("INVALID_REQUEST")
@@ -197,7 +197,7 @@ class Mongo(MG_Interfacer):
             if query["to_change"][i] not in ["location", "payment_method"]:
                 raise Exception("INVALID_REQUEST")
             if query["to_change"][i] == "location":
-                self.check_location_exists(query["new_vals"][i])
+                self.check_location_exists(query["new_vals"][i], role)
             if query["to_change"][i] == "payment_method":
                 if query["new_vals"][i] not in ["cash", "card"]:
                     raise Exception("CASH_CARD_ONLY")
@@ -208,11 +208,11 @@ class Mongo(MG_Interfacer):
             {"iD": cart_id}, {"$set": update_query}
         )
 
-    def checkout_cart(self, cart: dict) -> None:
+    def checkout_cart(self, cart: dict, role: str) -> None:
         if len(cart["bundle_ids"]) < 1:
             raise Exception("NO_ITEMS_IN_CART")
         loc = cart["location"]
-        self.check_location_exists(loc)
+        self.check_location_exists(loc, role)
         cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
         cart["status"] = "Ordered"
         cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")

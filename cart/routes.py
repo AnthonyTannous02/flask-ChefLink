@@ -89,7 +89,7 @@ def update_current_cart_attribute():
             cart = mg.get_stand_by_cart(current_user["uUID"], True)
             if cart is None:
                 raise Exception("NO_CURRENT_CART")
-            mg.update_current_cart_attribute(cart["iD"], query)
+            mg.update_current_cart_attribute(cart["iD"], query, current_user["role"])
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS"}, 200
@@ -103,7 +103,7 @@ def checkout_cart():
             cart = mg.get_stand_by_cart(current_user["uUID"], False)
             if cart is None:
                 raise Exception("NO_CART_ACTIVE")
-            mg.checkout_cart(cart)
+            mg.checkout_cart(cart, current_user["role"])
             with DelivSim(
                 time=10, 
                 callback=mg.deliver_order, 

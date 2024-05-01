@@ -27,14 +27,15 @@ def register():
     last_name = request.json["last_name"]
     username = request.json["username"]
     pp_url = request.json["pp_url"]
+    role = request.json["role"]
 
-    if not phone_nb[1:].isdigit() or phone_nb[0] != "+":
+    if not phone_nb or not phone_nb[1:].isdigit() or phone_nb[0] != "+" or role not in ["customer", "chef"]:
         return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
 
     with Firebase() as fb:
         try:
             with Mongo() as mg:
-                mg.check_for_dups(username, phone_nb)
+                mg.check_for_dups(username, phone_nb, role)
             with SpringBoot() as sb:
                 sb.add_user(
                     fb,
@@ -47,6 +48,7 @@ def register():
                     gender,
                     date_of_birth,
                     password,
+                    role,
                 )
         except Exception as e:
             if "EMAIL_EXISTS" in str(e):
@@ -79,9 +81,8 @@ def login():
                 return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
 
         with Firebase() as fb:
-            id = fb.sign_in(email, password)
-            if id:
-                role = "Customer"                                                       ## TODO: Make it dynamic
+            id, role = fb.sign_in(email, password)
+            if id:                                                       ## TODO: Make it dynamic
                 additional_claims = {"username": username, "p_URL": p_URL, "role": role}  ## TODO
                 access_token = create_access_token(
                     identity=id, additional_claims=additional_claims
@@ -115,7 +116,7 @@ def add_rem_bookmarks():
     try:
         food_id = request.json["food_id"]
         with SpringBoot() as sb:
-            resp = sb.add_rem_bookmarks(current_user["uUID"], food_id)
+            resp = sb.add_rem_bookmarks(current_user["uUID"], food_id, current_user["role"])
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS", "msg": resp}, 200
@@ -126,7 +127,7 @@ def add_rem_bookmarks():
 def get_bookmarks():
     try:
         with SpringBoot() as sb:
-            resp = sb.get_bookmarks(current_user["uUID"])
+            resp = sb.get_bookmarks(current_user["uUID"], current_user["role"])
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS", "msg": resp}, 200
@@ -146,16 +147,41 @@ def get_profile():
         },
     }, 200
 
+
+@bp.route("/get_profile_page_info", methods=["GET"])
+@jwt_required()
+def get_profile_page_info():
+    try:
+        with SpringBoot() as sb:
+            resp = sb.get_profile_page_info(current_user["uUID"], current_user["role"])
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "data": resp}, 200
+
+
+@bp.route("/update_profile", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    try:
+        attribs_to_change = request.json["attribs_to_change"]
+        attribs_new_vals = request.json["attribs_new_vals"]
+        with SpringBoot() as sb:
+            resp = sb.update_profile(current_user["uUID"], attribs_to_change, attribs_new_vals, current_user["role"])
+    except Exception as e:
+        return {"status": "FAIL", "error": "INVALID_REQUEST"}, 400
+    return {"status": "SUCCESS", "details": resp}, 200
+
     ## Requests to remove ##
 
 
 @bp.route("/")
 @jwt_required()
 def index():
+    role = get_jwt()["role"]
     with SpringBoot() as sb:
         resp = sb.test("uUID", current_user["uUID"])
     return {
-        "Message": "Hello, " + resp["username"] + ". Welcome to the Auth Blueprint!",
+        "Message": "Hello, " + resp["username"] + ". Welcome to the Auth Blueprint! You are a " + role + "!",
         "uUID": resp["uUID"],
         "username": resp["username"],
         "email": resp["email"],

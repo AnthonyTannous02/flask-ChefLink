@@ -2,8 +2,8 @@ from flask import request
 from food import bp
 from food.sb_interface import SpringBoot
 from food.mg_interface import Mongo
-from flask_jwt_extended import jwt_required
-
+from flask_jwt_extended import jwt_required, current_user
+from util.custom_decorators import chef_required
 
 @bp.route("/get_food_by_perk", methods=["GET"])
 @jwt_required(optional=True)
@@ -140,6 +140,54 @@ def get_food_and_reviews():
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
 
+
+@bp.route("/add_food", methods=["POST"])
+@chef_required()
+def add_food():
+    try:
+        food = request.json
+        with SpringBoot() as sb:
+            sb.add_food(current_user["uUID"], food)
+            return {"status": "SUCCESS"}, 200
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+
+
+@bp.route("/delete_food", methods=["DELETE"])
+@chef_required()
+def delete_food():
+    try:
+        food_id = request.json["id_food"]
+        with SpringBoot() as sb:
+            sb.delete_food(current_user["uUID"], food_id)
+            return {"status": "SUCCESS"}, 200
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+
+
+@bp.route("/get_chef_foods", methods=["GET"])
+@chef_required()
+def get_chef_foods():
+    try:
+        with Mongo() as mg:
+            foods = mg.get_chef_foods(current_user["uUID"])
+            return {"status": "SUCCESS", "data": foods}, 200
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+
+
+@bp.route("/add_food_review", methods=["POST"])
+@jwt_required()
+def add_food_review():
+    try:
+        review = request.json
+        review["id_food"] = review["food_id"]
+        del review["food_id"]
+        with SpringBoot() as sb:
+            sb.add_food_review(current_user["uUID"], review, current_user["role"])
+            return {"status": "SUCCESS"}, 200
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
 
 # @bp.route("/search_food_by_chef", methods=["GET"])
 # def search_food_by_chef():

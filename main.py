@@ -44,7 +44,7 @@ def run_app():
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
-        return {"uUID": identity}
+        return {"uUID": identity, "role": jwt_data["role"]}
 
     @app.after_request
     def refresh_expiring_jwts(response):

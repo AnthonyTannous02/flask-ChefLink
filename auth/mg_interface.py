@@ -7,9 +7,11 @@ class Mongo(MG_Interfacer):
     def __init__(self):
         super().__init__()
     
-    def check_for_dups(self, username, phone_nb):
-        self._conn.Customer.dis
-        user = self._conn.Customer.find_one({"username": username})
+    def check_for_dups(self, username, phone_nb, role):
+        if role == "customer":
+            user = self._conn.Customer.find_one({"username": username})
+        else:
+            user = self._conn.Chef.find_one({"username": username})
         if user:
             raise Exception("USERNAME_EXISTS")
         user = self._conn.Customer.find_one({"phone_Number": phone_nb})

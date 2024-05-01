@@ -29,9 +29,15 @@ class BucketInterface(Bucket_Interfacer):
         blob = self.__gen_blob(image_path)
         if blob.exists():
             expiration = datetime.now() + timedelta(minutes=15)
-            return blob.generate_signed_url(expiration=expiration, method="GET")
+            return blob.generate_signed_url(version="v2", expiration=expiration, method="GET")
         else:
             return "."
+
+    def gen_url_bulk(self, image_paths: list, expiration: datetime = datetime.today()) -> list:
+        ret: list = []
+        for path in image_paths:
+            ret.append(self.gen_url(path, expiration=expiration))
+        return ret
 
     def __gen_blob(self, path) -> Blob:
         return self._bucket.blob(path)

@@ -1,10 +1,12 @@
 import traceback
+import uuid
 from requests import HTTPError
 import requests
 import json
 from flask import current_app
 from util.sb_interfacer import SB_Interfacer
-
+from food.mg_interface import Mongo
+from media.bucket_interface import BucketInterface
 
 class SpringBoot(SB_Interfacer):
     # CRUD operations for food
@@ -14,7 +16,7 @@ class SpringBoot(SB_Interfacer):
     def get_explore_foods_by_cuisine(self, amount_per_category=10):
         data = {"amount": amount_per_category, "group_by": "category.cuisine"}
         try:
-            resp = self.__send_request("get_explore_food", "GET", data)["data"]
+            resp = self.__send_request("get_explore_food", "GET", data)["data"]            
         except Exception as e:
             print(str(e))
             raise HTTPError("SB_CONNECTION_FAILED")
@@ -70,7 +72,47 @@ class SpringBoot(SB_Interfacer):
         except Exception as e:
             print(str(e))
             raise Exception("SB_CONNECTION_FAILED")
+        
+        if "id_food" in food:
+            with Mongo() as mg:
+                chef = mg.find_chef_by_food(food["id_food"])
+                food["chef"] = chef
         return food
+
+    def add_food(self, chef_id: str, food: dict) -> None:
+        try:
+            food["id_food"] = "food_" + uuid.uuid4().hex
+            self.__send_request("add", "POST", food)
+            with Mongo() as mg:
+                mg.append_food_to_chef(chef_id, food["id_food"])
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+
+    def delete_food(self, chef_id: str, food_id: str) -> None:
+        try:
+            self.__send_request("DeleteFood", "DELETE", {"id_food": food_id})
+            with Mongo() as mg:
+                mg.remove_food_from_chef(chef_id, food_id)
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+
+    def add_food_review(self, user_id: str, review: dict, role: str) -> None:
+        try:
+            body = review
+            body["id_user"] = user_id
+            endpoint = None
+            if role == "customer":
+                endpoint = "Addreview"
+            else:
+                endpoint = "AddreviewChef"
+            code, resp = self.__send_request(endpoint, "POST", body, object="foodreview", incl_code=True)
+        except Exception as e:
+            print(str(e))
+            raise HTTPError("SB_CONNECTION_FAILED")
+        if code != 200:
+                raise Exception(resp["error"])
 
     def __send_dummy_request(self, url, method, body=None):
         if body:
@@ -82,11 +124,13 @@ class SpringBoot(SB_Interfacer):
         resp = response.text
         return json.loads(resp)
 
-    def __send_request(self, endpoint, method, body, object="food"):
+    def __send_request(self, endpoint, method, body, object="food", incl_code=False):
         url = self._get_url(object, endpoint)
         payload = json.dumps(body)
         headers = {"Content-Type": "application/json"}
         response = requests.request(method, url, headers=headers, data=payload)
         resp = response.text
         print(resp)  ## TODO Remove this line
+        if incl_code:
+            return response.status_code, json.loads(resp)
         return json.loads(resp)

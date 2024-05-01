@@ -9,8 +9,8 @@ class SpringBoot(SB_Interfacer):
     def __init__(self):
         super().__init__()
 
-    def get_loc_ids(self, user_id) -> list:
-        loc_ids = self._get_attrib_user("uUID", user_id, ["locations"])
+    def get_loc_ids(self, user_id, role) -> list:
+        loc_ids = self._get_attrib_user("uUID", user_id, ["locations"], role)
         print(loc_ids)
         return loc_ids["locations"]
 
