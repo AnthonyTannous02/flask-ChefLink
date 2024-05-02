@@ -225,6 +225,8 @@ class Mongo(MG_Interfacer):
     def place_order(self, cart: dict, user_id: str, role: str) -> None:
         if len(cart["bundle_ids"]) < 1:
             raise Exception("NO_ITEMS_IN_CART")
+        loc = cart["location"]
+        self.check_location_exists(loc, role)
         bundles = self._conn.Bundle.find({"id_bundle": {"$in": cart["bundle_ids"]}}, {"_id": 0, "id_bundle": 1, "id_chef": 1, "total_bundle_price": 1})
         chef_to_bundles: dict = {}
         for bundle in bundles:
@@ -241,7 +243,7 @@ class Mongo(MG_Interfacer):
                 "location": cart["location"],
                 "price": Dx(str(chef_to_bundles[chef]["price"])),
                 "bundle_ids": chef_to_bundles[chef]["bundle_ids"],
-                "order_date": "",
+                "order_date": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "completion_time": "",
                 "status": "Ordered",
                 "delivery_person": "",
@@ -258,20 +260,7 @@ class Mongo(MG_Interfacer):
                 {"$push": {"active_orders": chefs_to_cart[chef], "finished_orders": {"$each": []}}},
                 upsert=True
             )
-        
-
-    def checkout_cart(self, cart: dict, role: str) -> None:
-        if len(cart["bundle_ids"]) < 1:
-            raise Exception("NO_ITEMS_IN_CART")
-        loc = cart["location"]
-        self.check_location_exists(loc, role)
-        cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
-        cart["status"] = "Ordered"
-        cart["order_date"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        cart["price"] = Dx(cart["price"])
-        self._conn.Cart.update_one(
-            {"iD": cart["iD"]}, {"$set": cart}
-        )
+        self.delete_cart(user_id)
 
     def deliver_order(self, cart_id: str) -> None:
         try:
@@ -341,3 +330,72 @@ class Mongo(MG_Interfacer):
         except Exception as e:
             raise Exception("DB_CONNECTION_FAILED")
         return bundles
+
+### CHEF Functionalities ###
+
+    def get_active_orders(self, chef_id: str) -> list:
+        active_orders = []
+        try:
+            active_orders = list(
+                self._conn.ChefOrderMatch.aggregate([
+                    {"$match": {"id_chef": chef_id}},
+                    {"$project": {"_id": 0, "active_orders": 1}}
+                ])
+            )
+            if len(active_orders) > 0:
+                active_orders = active_orders[0]["active_orders"]
+            data = list(
+                self._conn.Cart.aggregate([
+                    {"$match": {"iD": {"$in": active_orders}}},
+                    {"$project": {"_id": 0, "iD": 1,"user_id": 1, "order_date": 1, "price": 1, "bundle_ids": 1}}
+                ])
+            )
+            for order in data:
+                order["price"] = str(order["price"])
+                order["customer_name"] = self._conn.Customer.find_one(
+                    {"uUID": order["user_id"]},
+                    {"_id": 0, "username": 1}
+                )
+            print(data)
+        except Exception as e:
+            raise Exception("DB_CONNECTION_FAILED")
+        return data
+
+    def get_finished_orders(self, chef_id: str) -> list:
+        finished_orders = []
+        try:
+            finished_orders = list(
+                self._conn.ChefOrderMatch.aggregate([
+                    {"$match": {"id_chef": chef_id}},
+                    {"$project": {"_id": 0, "finished_orders": 1}}
+                ])
+            )
+            if len(finished_orders) > 0:
+                finished_orders = finished_orders[0]["finished_orders"]
+            data = list(
+                self._conn.Cart.aggregate([
+                    {"$match": {"iD": {"$in": finished_orders}}},
+                    {"$project": {"_id": 0, "iD": 1,"user_id": 1, "order_date": 1, "completion_time": 1, "price": 1, "bundle_ids": 1}}
+                ])
+            )
+            for order in data:
+                order["price"] = str(order["price"])
+                order["customer_name"] = self._conn.Customer.find_one(
+                    {"uUID": order["user_id"]},
+                    {"_id": 0, "username": 1}
+                )
+        except Exception as e:
+            raise Exception("DB_CONNECTION_FAILED")
+        return data
+
+    def send_order(self, order_id: str, chef_id: str) -> None:
+        cart = self._conn.Cart.find_one({"iD": order_id})
+        cart["delivery_person"] = delivery_people_names[random.randint(0, len(delivery_people_names) - 1)]
+        self._conn.Cart.update_one(
+            {"iD": cart["iD"]}, {"$set": cart}
+        )
+        self._conn.ChefOrderMatch.update_one(
+            {"id_chef": chef_id},
+            {"$pull": {"active_orders": order_id},
+            "$push": {"finished_orders": order_id}}
+        )

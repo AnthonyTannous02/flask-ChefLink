@@ -189,6 +189,16 @@ def index():
     }
 
 
+# @bp.route("/x")
+# def x():
+#     email = request.json["email"]
+#     role = request.json["role"]
+#     with Firebase() as fb:
+#         id = fb.sign_up(email, "123456", role)
+#         print(id)
+#     return id
+
+
 @bp.route("/refresh", methods=["GET"])  ## TODO to remove
 @jwt_required(refresh=True)
 def refresh():

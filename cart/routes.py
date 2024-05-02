@@ -3,6 +3,7 @@ from cart import bp
 from flask_jwt_extended import current_user, jwt_required
 from cart.sb_interface import SpringBoot
 from cart.mg_interface import Mongo
+from util.custom_decorators import chef_required
 from util.deliv_sim import DelivSim
 
 
@@ -95,27 +96,6 @@ def update_current_cart_attribute():
     return {"status": "SUCCESS"}, 200
 
 
-@bp.route("/checkout_cart", methods=["POST"])
-@jwt_required()
-def checkout_cart():
-    try:
-        with Mongo() as mg:
-            cart = mg.get_stand_by_cart(current_user["uUID"], False)
-            if cart is None:
-                raise Exception("NO_CART_ACTIVE")
-            mg.checkout_cart(cart, current_user["role"])
-            # with DelivSim(
-            #     time=10, 
-            #     callback=mg.deliver_order, 
-            #     args=cart["iD"], 
-            #     app=current_app._get_current_object()
-            # ) as d:
-            #     d.simulate()
-    except Exception as e:
-        return {"status": "FAIL", "error": str(e)}, 400
-    return {"status": "SUCCESS"}, 200
-
-
 @bp.route("/place_order", methods=["POST"])
 @jwt_required()
 def place_order():
@@ -125,13 +105,6 @@ def place_order():
             if cart is None:
                 raise Exception("NO_CART_ACTIVE")
             mg.place_order(cart, current_user["uUID"], current_user["role"])
-            # with DelivSim(
-            #     time=10, 
-            #     callback=mg.deliver_order, 
-            #     args=cart["iD"], 
-            #     app=current_app._get_current_object()
-            # ) as d:
-            #     d.simulate()
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS"}, 200
@@ -159,3 +132,47 @@ def get_bundle_info():
         print(str(e))
         return {"status": "FAIL", "error": str(e)}, 400
     return {"status": "SUCCESS", "data": bundle_info}, 200
+
+
+### CHEF ENDPOINTS ###
+
+
+@bp.route("/get_active_orders", methods=["GET"])
+@chef_required()
+def get_active_orders():
+    try:
+        with Mongo() as mg:
+            active_orders = mg.get_active_orders(current_user["uUID"])
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "data": active_orders}, 200
+
+
+@bp.route("/get_finished_orders", methods=["GET"])
+@chef_required()
+def get_finished_orders():
+    try:
+        with Mongo() as mg:
+            active_orders = mg.get_finished_orders(current_user["uUID"])
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS", "data": active_orders}, 200
+
+
+@bp.route("/send_order", methods=["PUT"])
+@chef_required()
+def send_order():
+    try:
+        order_id = request.json["order_id"]
+        with Mongo() as mg:
+            mg.send_order(order_id, current_user["uUID"])
+            with DelivSim(
+                time=10, 
+                callback=mg.deliver_order, 
+                args=order_id, 
+                app=current_app._get_current_object()
+            ) as d:
+                d.simulate()
+    except Exception as e:
+        return {"status": "FAIL", "error": str(e)}, 400
+    return {"status": "SUCCESS"}, 200
