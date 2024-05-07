@@ -138,12 +138,13 @@ def get_bookmarks():
 def get_profile():
     claims = get_jwt()
     if not claims or not current_user:
-        return {"status": "SUCCESS", "data": ""}, 400
+        return {"status": "FAIL", "data": ""}, 400
     return {
         "status": "SUCCESS",
         "data": {
             "username": claims["username"],
             "p_URL": claims["p_URL"],
+            "role": claims["role"]
         },
     }, 200
 
