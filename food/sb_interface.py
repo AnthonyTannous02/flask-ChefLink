@@ -88,6 +88,7 @@ class SpringBoot(SB_Interfacer):
         except Exception as e:
             print(str(e))
             raise HTTPError("SB_CONNECTION_FAILED")
+        return food["id_food"]
 
     def delete_food(self, chef_id: str, food_id: str) -> None:
         try:

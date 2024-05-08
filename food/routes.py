@@ -147,8 +147,8 @@ def add_food():
     try:
         food = request.json
         with SpringBoot() as sb:
-            sb.add_food(current_user["uUID"], food)
-            return {"status": "SUCCESS"}, 200
+            foodid = sb.add_food(current_user["uUID"], food)
+            return {"status": "SUCCESS", "data": foodid}, 200
     except Exception as e:
         return {"status": "FAIL", "error": str(e)}, 400
 
